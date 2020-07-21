@@ -11,6 +11,8 @@
 #ifndef INCLUDED_GR_RUNTIME_BLOCK_H
 #define INCLUDED_GR_RUNTIME_BLOCK_H
 
+#include <memory>
+
 #include <gnuradio/api.h>
 #include <gnuradio/basic_block.h>
 #include <gnuradio/config.h>
@@ -513,6 +515,14 @@ public:
      * \param min_output_buffer the requested minimum output size in items.
      */
     void set_min_output_buffer(int port, long min_output_buffer);
+    
+    /*!
+     * \brief Allocate the block_detail and necessary output buffers for this 
+     * block.
+     */
+    void allocate_detail(int ninputs, int noutputs, 
+                         const std::vector<int>& downstream_max_nitems_vec);
+    
 
     // --------------- Performance counter functions -------------
 
@@ -908,6 +918,13 @@ protected:
                             const pmt::pmt_t& key);
 
     void enable_update_rate(bool en);
+    
+    /*!
+     * \brief Allocate a buffer for the given output port of this block. Note 
+     * that the downstream max number of items must be passed in to this
+     * function for consideration.
+     */
+    buffer_sptr allocate_buffer(int port, int downstream_max_nitems);
 
     std::vector<long> d_max_output_buffer;
     std::vector<long> d_min_output_buffer;
@@ -929,7 +946,7 @@ protected:
     /*! PMT Symbol of the system port, `pmt::mp("system")`
      */
     const pmt::pmt_t d_system_port;
-
+    
 public:
     block_detail_sptr detail() const { return d_detail; }
     void set_detail(block_detail_sptr detail) { d_detail = detail; }

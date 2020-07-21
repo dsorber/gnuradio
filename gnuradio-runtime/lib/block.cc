@@ -22,6 +22,12 @@
 
 namespace gr {
 
+// Moved from flat_flowgraph.cc
+// 32Kbyte buffer size between blocks
+#define GR_FIXED_BUFFER_SIZE (32 * (1L << 10))
+
+static const unsigned int s_fixed_buffer_size = GR_FIXED_BUFFER_SIZE;
+
 block::block(const std::string& name,
              io_signature::sptr input_signature,
              io_signature::sptr output_signature)
@@ -372,10 +378,94 @@ void block::set_min_output_buffer(int port, long min_output_buffer)
         d_min_output_buffer[port] = min_output_buffer;
 }
 
+void block::allocate_detail(int ninputs, int noutputs, 
+                            const std::vector<int>& downstream_max_nitems_vec)
+{
+    block_detail_sptr detail = make_block_detail(ninputs, noutputs);
+
+    GR_LOG_DEBUG(d_debug_logger, "Creating block detail for " + identifier());
+
+    for (int i = 0; i < noutputs; i++) {
+        expand_minmax_buffer(i);
+
+        buffer_sptr buffer = allocate_buffer(i, downstream_max_nitems_vec[i]);
+        GR_LOG_DEBUG(d_debug_logger,
+                     "Allocated buffer for output " + identifier() + " " +
+                         std::to_string(i));
+        detail->set_output(i, buffer);
+
+        // Update the block's max_output_buffer based on what was actually allocated.
+        if ((max_output_buffer(i) != buffer->bufsize()) && (max_output_buffer(i) != -1))
+            GR_LOG_WARN(d_logger,
+                        boost::format("Block (%1%) max output buffer set to %2%"
+                                      " instead of requested %3%") %
+                            alias() % buffer->bufsize() %
+                            max_output_buffer(i));
+        set_max_output_buffer(i, buffer->bufsize());
+    }
+
+    // Store the block_detail that was created above
+    set_detail(detail);
+}
 
 bool block::update_rate() const { return d_update_rate; }
 
 void block::enable_update_rate(bool en) { d_update_rate = en; }
+
+buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems)
+{
+    int item_size = output_signature()->sizeof_stream_item(port);
+
+    // *2 because we're now only filling them 1/2 way in order to
+    // increase the available parallelism when using the TPB scheduler.
+    // (We're double buffering, where we used to single buffer)
+    int nitems = s_fixed_buffer_size * 2 / item_size;
+
+    // Make sure there are at least twice the output_multiple no. of items
+    if (nitems < 2 * output_multiple()) // Note: this means output_multiple()
+        nitems = 2 * output_multiple(); // can't be changed by block dynamically
+
+    // Limit buffer size if indicated
+    if (max_output_buffer(port) > 0) {
+        // std::cout << "constraining output items to " << block->max_output_buffer(port)
+        // << "\n";
+        nitems = std::min((long)nitems, (long)max_output_buffer(port));
+        nitems -= nitems % output_multiple();
+        if (nitems < 1)
+            throw std::runtime_error("problems allocating a buffer with the given max "
+                                     "output buffer constraint!");
+    } else if (min_output_buffer(port) > 0) {
+        nitems = std::max((long)nitems, (long)min_output_buffer(port));
+        nitems -= nitems % output_multiple();
+        if (nitems < 1)
+            throw std::runtime_error("problems allocating a buffer with the given min "
+                                     "output buffer constraint!");
+    }
+    
+    // If any downstream blocks are decimators and/or have a large output_multiple,
+    // ensure we have a buffer at least twice their decimation factor*output_multiple
+    nitems = std::max(nitems, downstream_max_nitems);
+
+    //  std::cout << "make_buffer(" << nitems << ", " << item_size << ", " << grblock <<
+    //  "\n";
+    // We're going to let this fail once and retry. If that fails,
+    // throw and exit.
+    buffer_sptr buf;
+    try {
+        buf = make_buffer(nitems, item_size, shared_from_base<block>());
+        
+    } catch (std::bad_alloc&) {
+        buf = make_buffer(nitems, item_size, shared_from_base<block>());
+    }
+
+    // Set the max noutput items size here to make sure it's always
+    // set in the block and available in the start() method.
+    // But don't overwrite if the user has set this externally.
+    if (!is_set_max_noutput_items())
+        set_max_noutput_items(nitems);
+
+    return buf;
+}
 
 float block::pc_noutput_items()
 {
