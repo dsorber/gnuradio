@@ -16,6 +16,7 @@
 #include <gnuradio/block_detail.h>
 #include <gnuradio/block_registry.h>
 #include <gnuradio/buffer.h>
+#include <gnuradio/buffer_reader.h>
 #include <gnuradio/prefs.h>
 #include <iostream>
 #include <stdexcept>
@@ -448,8 +449,7 @@ buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems)
 
     //  std::cout << "make_buffer(" << nitems << ", " << item_size << ", " << grblock <<
     //  "\n";
-    // We're going to let this fail once and retry. If that fails,
-    // throw and exit.
+    // We're going to let this fail once and retry. If that fails, throw and exit.
     buffer_sptr buf;
     try {
         buf = make_buffer(nitems, item_size, shared_from_base<block>());

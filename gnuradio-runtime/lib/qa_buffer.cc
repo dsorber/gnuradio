@@ -14,6 +14,7 @@
 
 
 #include <gnuradio/buffer.h>
+#include <gnuradio/buffer_reader.h>
 #include <gnuradio/random.h>
 #include <stdlib.h>
 #include <boost/test/unit_test.hpp>

@@ -15,6 +15,7 @@
 #include "flat_flowgraph.h"
 #include <gnuradio/block_detail.h>
 #include <gnuradio/buffer.h>
+#include <gnuradio/buffer_reader.h>
 #include <gnuradio/logger.h>
 #include <gnuradio/prefs.h>
 #include <volk/volk.h>
