@@ -20,6 +20,9 @@
 #include <qwt_symbol.h>
 #include <volk/volk.h>
 
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/numeric.hpp>
+
 #include <string.h>
 #include <algorithm>
 
@@ -51,7 +54,8 @@ freq_sink_c_impl::freq_sink_c_impl(int fftsize,
       d_fftsize(fftsize),
       d_fft_shift(fftsize),
       d_fftavg(1.0),
-      d_wintype((filter::firdes::win_type)(wintype)),
+      d_wintype((fft::window::win_type)(wintype & 0xFF)),
+      d_window_normalize(wintype & (1 << 15)),
       d_center_freq(fc),
       d_bandwidth(bw),
       d_name(name),
@@ -201,12 +205,18 @@ void freq_sink_c_impl::set_fft_average(const float fftavg)
 
 float freq_sink_c_impl::fft_average() const { return d_fftavg; }
 
-void freq_sink_c_impl::set_fft_window(const filter::firdes::win_type win)
+void freq_sink_c_impl::set_fft_window(const fft::window::win_type win)
 {
     d_main_gui->setFFTWindowType(win);
 }
 
-filter::firdes::win_type freq_sink_c_impl::fft_window() { return d_wintype; }
+fft::window::win_type freq_sink_c_impl::fft_window() { return d_wintype; }
+
+void freq_sink_c_impl::set_fft_window_normalized(const bool enable)
+{
+    d_window_normalize = enable;
+    buildwindow();
+}
 
 void freq_sink_c_impl::set_frequency_range(const double centerfreq,
                                            const double bandwidth)
@@ -394,7 +404,7 @@ bool freq_sink_c_impl::windowreset()
 {
     gr::thread::scoped_lock lock(d_setlock);
 
-    filter::firdes::win_type newwintype;
+    fft::window::win_type newwintype;
     newwintype = d_main_gui->getFFTWindowType();
     if (d_wintype != newwintype) {
         d_wintype = newwintype;
@@ -407,8 +417,8 @@ bool freq_sink_c_impl::windowreset()
 void freq_sink_c_impl::buildwindow()
 {
     d_window.clear();
-    if (d_wintype != filter::firdes::WIN_NONE) {
-        d_window = filter::firdes::window(d_wintype, d_fftsize, 6.76);
+    if (d_wintype != fft::window::WIN_NONE) {
+        d_window = fft::window::build(d_wintype, d_fftsize, 6.76, d_window_normalize);
     }
 }
 
