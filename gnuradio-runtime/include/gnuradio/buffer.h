@@ -55,7 +55,7 @@ public:
     /*!
      * \brief return number of items worth of space available for writing
      */
-    int space_available();
+    virtual int space_available() = 0;
 
     /*!
      * \brief return size of this buffer in items
@@ -73,7 +73,7 @@ public:
      * The return value points at space that can hold at least
      * space_available() items.
      */
-    void* write_pointer();
+    virtual void* write_pointer();
 
     /*!
      * \brief tell buffer that we wrote \p nitems into it
@@ -145,9 +145,11 @@ public:
 
 private:
     friend class buffer_reader;
-    friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
-                                                  size_t sizeof_item,
-                                                  block_sptr link);
+    // DBS - this is temporarily moving to buffer_double_mapped until a better
+    // interface is determined
+//    friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
+//                                                  size_t sizeof_item,
+//                                                  block_sptr link);
     friend GR_RUNTIME_API buffer_reader_sptr buffer_add_reader(buffer_sptr buf,
                                                                int nzero_preload,
                                                                block_sptr link,
@@ -160,8 +162,6 @@ protected:
     // Keep track of maximum sample delay of any reader; Only prune tags past this.
     unsigned d_max_reader_delay;
 
-private:
-    std::unique_ptr<gr::vmcircbuf> d_vmcircbuf;
     size_t d_sizeof_item; // in bytes
     std::vector<buffer_reader*> d_readers;
     std::weak_ptr<block> d_link; // block that writes to this buffer
@@ -177,29 +177,17 @@ private:
     std::multimap<uint64_t, tag_t> d_item_tags;
     uint64_t d_last_min_items_read;
 
-    unsigned index_add(unsigned a, unsigned b)
-    {
-        unsigned s = a + b;
+    /*!
+     * \brief  Increment read or write index for this buffer
+     */
+    virtual unsigned index_add(unsigned a, unsigned b) = 0;
 
-        if (s >= d_bufsize)
-            s -= d_bufsize;
+    /*!
+     * \brief  Decrement read or write index for this buffer
+     */
+    virtual unsigned index_sub(unsigned a, unsigned b) = 0;
 
-        assert(s < d_bufsize);
-        return s;
-    }
-
-    unsigned index_sub(unsigned a, unsigned b)
-    {
-        int s = a - b;
-
-        if (s < 0)
-            s += d_bufsize;
-
-        assert((unsigned)s < d_bufsize);
-        return s;
-    }
-
-    virtual bool allocate_buffer(int nitems, size_t sizeof_item);
+    virtual bool allocate_buffer(int nitems, size_t sizeof_item) = 0;
 
     /*!
      * \brief constructor is private.  Use gr_make_buffer to create instances.

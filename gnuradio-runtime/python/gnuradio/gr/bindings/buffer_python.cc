@@ -14,7 +14,7 @@
 /* BINDTOOL_GEN_AUTOMATIC(0)                                                       */
 /* BINDTOOL_USE_PYGCCXML(0)                                                        */
 /* BINDTOOL_HEADER_FILE(buffer.h)                                        */
-/* BINDTOOL_HEADER_FILE_HASH(3e7d5a9e2c0f13ca4d00f721e60c7219)                     */
+/* BINDTOOL_HEADER_FILE_HASH(1cc8947e0bf46a990b2b4b90505d3956)                     */
 /***********************************************************************************/
 
 #include <pybind11/complex.h>
@@ -38,7 +38,7 @@ void bind_buffer(py::module& m)
     py::class_<buffer, std::shared_ptr<buffer>>(m, "buffer", D(buffer))
 
 
-        .def("space_available", &buffer::space_available, D(buffer, space_available))
+//        .def("space_available", &buffer::space_available, D(buffer, space_available))
 
 
         .def("bufsize", &buffer::bufsize, D(buffer, bufsize))
@@ -122,12 +122,12 @@ void bind_buffer(py::module& m)
         ;
 
 
-    m.def("make_buffer",
-          &::gr::make_buffer,
-          py::arg("nitems"),
-          py::arg("sizeof_item"),
-          py::arg("link") = gr::block_sptr(),
-          D(make_buffer));
+//    m.def("make_buffer",
+//          &::gr::make_buffer,
+//          py::arg("nitems"),
+//          py::arg("sizeof_item"),
+//          py::arg("link") = gr::block_sptr(),
+//          D(make_buffer));
 
 
     m.def("buffer_ncurrently_allocated",

@@ -80,7 +80,7 @@ public:
      * \brief Return maximum number of items that could ever be available for reading.
      * This is used as a sanity check in the scheduler to avoid looping forever.
      */
-    int max_possible_items_available() const { return d_buffer->d_bufsize - 1; }
+    int max_possible_items_available() const { return d_buffer->bufsize() - 1; }
 
     /*!
      * \brief return pointer to read buffer.

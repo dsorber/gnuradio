@@ -52,6 +52,7 @@ static long s_buffer_count = 0; // counts for debugging storage mgmt
  gr::buffer_reader goes to zero, we can successfully reclaim it.
  ---------------------------------------------------------------------------- */
 
+#if 0
 /*
  * Compute the minimum number of buffer items that work (i.e.,
  * address space wrap-around works).  To work is to satisfy this
@@ -63,6 +64,7 @@ static inline long minimum_buffer_items(long type_size, long page_size)
 {
     return page_size / GR_GCD(type_size, page_size);
 }
+#endif
 
 
 buffer::buffer(int nitems, size_t sizeof_item, block_sptr link)
@@ -77,16 +79,16 @@ buffer::buffer(int nitems, size_t sizeof_item, block_sptr link)
       d_last_min_items_read(0)
 {
     gr::configure_default_loggers(d_logger, d_debug_logger, "buffer");
-    if (!allocate_buffer(nitems, sizeof_item))
-        throw std::bad_alloc();
+//    if (!allocate_buffer(nitems, sizeof_item))
+//        throw std::bad_alloc();
 
     s_buffer_count++;
 }
 
-buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
-{
-    return buffer_sptr(new buffer(nitems, sizeof_item, link));
-}
+//buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
+//{
+//    return buffer_sptr(new buffer(nitems, sizeof_item, link));
+//}
 
 buffer::~buffer()
 {
@@ -98,6 +100,7 @@ buffer::~buffer()
  * sets d_vmcircbuf, d_base, d_bufsize.
  * returns true iff successful.
  */
+#if 0  // DBS - this needs to be pure virtual
 bool buffer::allocate_buffer(int nitems, size_t sizeof_item)
 {
     int orig_nitems = nitems;
@@ -138,7 +141,9 @@ bool buffer::allocate_buffer(int nitems, size_t sizeof_item)
     d_base = (char*)d_vmcircbuf->pointer_to_first_copy();
     return true;
 }
+#endif
 
+#if 0
 int buffer::space_available()
 {
     if (d_readers.empty())
@@ -164,12 +169,20 @@ int buffer::space_available()
         return d_bufsize - most_data - 1;
     }
 }
+#endif
 
 void* buffer::write_pointer() { return &d_base[d_write_index * d_sizeof_item]; }
 
 void buffer::update_write_pointer(int nitems)
 {
     gr::thread::scoped_lock guard(*mutex());
+    
+    // DBS - DEBUG
+    std::ostringstream msg;
+    msg << "update_write_pointer -- d_write_index: " << d_write_index 
+        << " -- nitems: " << nitems;
+    GR_LOG_DEBUG(d_logger, msg.str());
+    
     d_write_index = index_add(d_write_index, nitems);
     d_abs_write_offset += nitems;
 }

@@ -47,6 +47,7 @@ add_library(gnuradio-runtime
   block_gateway_impl.cc
   block_registry.cc
   buffer.cc
+  buffer_double_mapped.cc
   buffer_reader.cc
   flat_flowgraph.cc
   flowgraph.cc
