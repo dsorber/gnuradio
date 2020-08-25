@@ -8,8 +8,8 @@
  *
  */
 
-#ifndef INCLUDED_GR_RUNTIME_BUFFER_DOUBLE_MAPPED_H
-#define INCLUDED_GR_RUNTIME_BUFFER_DOUBLE_MAPPED_H
+#ifndef INCLUDED_GR_RUNTIME_BUFFER_SINGLE_MAPPED_H
+#define INCLUDED_GR_RUNTIME_BUFFER_SINGLE_MAPPED_H
 
 #include <gnuradio/api.h>
 #include <gnuradio/logger.h>
@@ -22,16 +22,18 @@ namespace gr {
 class vmcircbuf;
     
 /*!
+ * TODO: update this
+ * 
  * \brief Single writer, multiple reader fifo.
  * \ingroup internal
  */
-class GR_RUNTIME_API buffer_double_mapped : public buffer
+class GR_RUNTIME_API buffer_single_mapped : public buffer
 {
 public:
     gr::logger_ptr d_logger;
     gr::logger_ptr d_debug_logger;
 
-    virtual ~buffer_double_mapped();
+    virtual ~buffer_single_mapped();
     
     /*!
      * \brief return number of items worth of space available for writing
@@ -59,10 +61,12 @@ protected:
 
     virtual unsigned index_sub(unsigned a, unsigned b)
     {
+        // NOTE: a is writer ptr and b is read ptr
         int s = a - b;
 
         if (s < 0)
-            s += d_bufsize;
+            s = d_bufsize - b;
+//            s += d_bufsize;
 
         std::ostringstream msg;
         msg << "[" << this << "] index_sub() a: " << a
@@ -76,11 +80,11 @@ protected:
 private:
     
     friend class buffer_reader;
-    friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
-                                                  size_t sizeof_item,
-                                                  block_sptr link);
+//    friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
+//                                                  size_t sizeof_item,
+//                                                  block_sptr link);
     
-    std::unique_ptr<gr::vmcircbuf> d_vmcircbuf;
+    std::unique_ptr<char[]> d_buffer;    
     
     /*!
      * \brief constructor is private.  Use gr_make_buffer to create instances.
@@ -95,7 +99,7 @@ private:
      * dependent boundary.  This is typically the system page size, but
      * under MS windows is 64KB.
      */
-    buffer_double_mapped(int nitems, size_t sizeof_item, block_sptr link);  
+    buffer_single_mapped(int nitems, size_t sizeof_item, block_sptr link);  
 
 }; 
 
@@ -103,5 +107,5 @@ private:
 
 
 
-#endif /* INCLUDED_GR_RUNTIME_BUFFER_DOUBLE_MAPPED_H */
+#endif /* INCLUDED_GR_RUNTIME_BUFFER_SINGLE_MAPPED_H */
     

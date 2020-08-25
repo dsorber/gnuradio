@@ -75,8 +75,19 @@ const void* buffer_reader::read_pointer()
 void buffer_reader::update_read_pointer(int nitems)
 {
     gr::thread::scoped_lock guard(*mutex());
+    
+    // DBS - DEBUG
+    unsigned orig_rd_idx = d_read_index;
+    
     d_read_index = d_buffer->index_add(d_read_index, nitems);
     d_abs_read_offset += nitems;
+    
+    // DBS - DEBUG
+    std::ostringstream msg;
+    msg << "[" << d_buffer << "] update_read_pointer -- orig d_read_index: " 
+        << orig_rd_idx  << " -- nitems: " << nitems << " -- d_read_index: "
+        << d_read_index;
+    GR_LOG_DEBUG(d_buffer->d_logger, msg.str());
 }
 
 void buffer_reader::get_tags_in_range(std::vector<tag_t>& v,

@@ -178,13 +178,17 @@ void buffer::update_write_pointer(int nitems)
     gr::thread::scoped_lock guard(*mutex());
     
     // DBS - DEBUG
-    std::ostringstream msg;
-    msg << "update_write_pointer -- d_write_index: " << d_write_index 
-        << " -- nitems: " << nitems;
-    GR_LOG_DEBUG(d_logger, msg.str());
+    unsigned orig_wr_idx = d_write_index;
     
     d_write_index = index_add(d_write_index, nitems);
     d_abs_write_offset += nitems;
+    
+    // DBS - DEBUG
+    std::ostringstream msg;
+    msg << "[" << this << "] update_write_pointer -- orig d_write_index: " 
+        << orig_wr_idx  << " -- nitems: " << nitems << " -- d_write_index: "
+        << d_write_index;
+    GR_LOG_DEBUG(d_logger, msg.str());
 }
 
 void buffer::set_done(bool done)

@@ -22,6 +22,7 @@ install(FILES
   buffer.h
   buffer_double_mapped.h
   buffer_reader.h
+  buffer_single_mapped.h
   constants.h
   endianness.h
   expj.h

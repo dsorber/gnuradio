@@ -30,7 +30,7 @@
 namespace gr {
 
 // must be defined to either 0 or 1
-#define ENABLE_LOGGING 0
+#define ENABLE_LOGGING 1
 
 #if (ENABLE_LOGGING)
 #define LOG(x) \

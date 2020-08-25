@@ -12,7 +12,7 @@
 #include "config.h"
 #endif
 #include "vmcircbuf.h"
-#include <gnuradio/buffer_double_mapped.h>
+#include <gnuradio/buffer_single_mapped.h>
 #include <gnuradio/buffer_reader.h>
 #include <gnuradio/integer_math.h>
 #include <gnuradio/math.h>
@@ -30,39 +30,39 @@ namespace gr {
  *
  *     type_size * nitems == k * page_size
  */
-static inline long minimum_buffer_items(long type_size, long page_size)
-{
-    return page_size / GR_GCD(type_size, page_size);
-}
+//static inline long minimum_buffer_items(long type_size, long page_size)
+//{
+//    return page_size / GR_GCD(type_size, page_size);
+//}
 
 
-buffer_double_mapped::buffer_double_mapped(int nitems, size_t sizeof_item, block_sptr link)
+buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, block_sptr link)
     : buffer(nitems, sizeof_item, link)
 {
-    gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_double_mapped");
+    gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_single_mapped");
     if (!allocate_buffer(nitems, sizeof_item))
         throw std::bad_alloc();
     
-    GR_LOG_DEBUG(d_logger, "buffer_double_mapped constructor");
+    GR_LOG_DEBUG(d_logger, "buffer_single_mapped constructor");
 }
 
-#if 1
+#if 0
 buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
 {
     // DBS - DEBUG
     gr::logger_ptr logger;
     gr::logger_ptr debug_logger;
-    gr::configure_default_loggers(logger, debug_logger, "buffer_double_mapped");
+    gr::configure_default_loggers(logger, debug_logger, "buffer_single_mapped");
     std::ostringstream msg;
-    msg << "buffer_double_mapped make_buffer() called  nitems: " << nitems 
+    msg << "make_buffer() called  nitems: " << nitems 
         << " -- sizeof_item: " << sizeof_item;
     GR_LOG_DEBUG(logger, msg.str());
     
-    return buffer_sptr(new buffer_double_mapped(nitems, sizeof_item, link));
+    return buffer_sptr(new buffer_single_mapped(nitems, sizeof_item, link));
 }
 #endif
 
-buffer_double_mapped::~buffer_double_mapped()
+buffer_single_mapped::~buffer_single_mapped()
 {
 }
 
@@ -70,8 +70,14 @@ buffer_double_mapped::~buffer_double_mapped()
  * sets d_vmcircbuf, d_base, d_bufsize.
  * returns true iff successful.
  */
-bool buffer_double_mapped::allocate_buffer(int nitems, size_t sizeof_item)
+bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item)
 {
+    d_buffer.reset(new char[nitems * sizeof_item]);
+    
+    d_base = d_buffer.get();
+    d_bufsize = nitems;
+    
+#if 0
     int orig_nitems = nitems;
 
     // Any buffer size we come up with must be a multiple of min_nitems.
@@ -107,10 +113,11 @@ bool buffer_double_mapped::allocate_buffer(int nitems, size_t sizeof_item)
     }
 
     d_base = (char*)d_vmcircbuf->pointer_to_first_copy();
+#endif
     return true;
 }
 
-int buffer_double_mapped::space_available()
+int buffer_single_mapped::space_available()
 {
     if (d_readers.empty())
         return d_bufsize - 1; // See comment below
@@ -118,6 +125,38 @@ int buffer_double_mapped::space_available()
     else {
         // Find out the maximum amount of data available to our readers
 
+        unsigned max_read_index = d_readers[0]->d_read_index;
+        for (size_t idx = 1; idx < d_readers.size(); ++idx) {
+            if (d_readers[idx]->d_read_index > max_read_index) {
+                max_read_index = d_readers[idx]->d_read_index;
+            }
+        }
+        
+        if (d_write_index == (d_bufsize - 1))
+        {
+            d_write_index = 0;
+        }
+        
+        unsigned available_slots = 0;
+        if (max_read_index ==  d_write_index)
+//        if (max_read_index == 0 && d_write_index == 0)
+//        {
+//            available_slots = d_bufsize - 1;
+//        }
+//        else if (max_read_index ==  d_write_index)
+        {
+            available_slots = d_bufsize - 1;
+        }
+        else if (max_read_index > d_write_index)
+        {
+            available_slots = max_read_index - d_write_index;
+        }
+        else
+        {
+            available_slots = d_bufsize - d_write_index - 1;
+        }
+        
+#if 0
         int most_data = d_readers[0]->items_available();
         uint64_t min_items_read = d_readers[0]->nitems_read();
         for (size_t i = 1; i < d_readers.size(); i++) {
@@ -138,16 +177,31 @@ int buffer_double_mapped::space_available()
             problem = " [PROBLEM]";
         }
         
-        msg << "[" << this << "] " 
-            << "space_available() called  d_write_index: " << d_write_index 
+        msg << "space_available() called  d_write_index: " << d_write_index 
             << " -- space_available: "  << (d_bufsize - most_data - 1) 
             << " -- " << problem;
         GR_LOG_DEBUG(d_logger, msg.str());
         
-
         // The -1 ensures that the case d_write_index == d_read_index is
         // unambiguous.  It indicates that there is no data for the reader
         return d_bufsize - most_data - 1;
+#endif
+
+        // DBS - DEBUG
+        std::ostringstream msg;
+        std::string problem;
+        if ((d_write_index + available_slots) >= d_bufsize)
+        {
+            problem = " [PROBLEM]";
+        }
+        
+        msg << "[" << this << "] " 
+            << "space_available() called  d_write_index: "  << d_write_index 
+            << " -- max_read_index: " << max_read_index 
+            << " -- available_slots: " << available_slots << " -- " << problem;
+        GR_LOG_DEBUG(d_logger, msg.str());
+        
+        return available_slots;
     }
 }
 
