@@ -48,6 +48,10 @@ GR_RUNTIME_API long buffer_ncurrently_allocated();
 class GR_RUNTIME_API buffer_reader
 {
 public:
+    // DBS - just for testing
+    gr::logger_ptr d_logger;
+    gr::logger_ptr d_debug_logger;
+    
     ~buffer_reader();
 
     /*!
@@ -99,7 +103,7 @@ public:
 
     gr::thread::mutex* mutex() { return d_buffer->mutex(); }
 
-    uint64_t nitems_read() { return d_abs_read_offset; }
+    uint64_t nitems_read() const { return d_abs_read_offset; }
 
     void reset_nitem_counter() { d_abs_read_offset = 0; }
 

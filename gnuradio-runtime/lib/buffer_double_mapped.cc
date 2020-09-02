@@ -46,7 +46,7 @@ buffer_double_mapped::buffer_double_mapped(int nitems, size_t sizeof_item, block
     GR_LOG_DEBUG(d_logger, "buffer_double_mapped constructor");
 }
 
-#if 1
+#ifdef DOUBLE_MAPPED
 buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
 {
     // DBS - DEBUG
@@ -132,16 +132,9 @@ int buffer_double_mapped::space_available()
         
         // DBS - DEBUG
         std::ostringstream msg;
-        std::string problem;
-        if ((d_write_index + (d_bufsize - most_data - 1)) >= d_bufsize)
-        {
-            problem = " [PROBLEM]";
-        }
-        
         msg << "[" << this << "] " 
             << "space_available() called  d_write_index: " << d_write_index 
-            << " -- space_available: "  << (d_bufsize - most_data - 1) 
-            << " -- " << problem;
+            << " -- space_available: "  << (d_bufsize - most_data - 1);
         GR_LOG_DEBUG(d_logger, msg.str());
         
 

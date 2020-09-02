@@ -29,12 +29,17 @@ buffer_add_reader(buffer_sptr buf, int nzero_preload, block_sptr link, int delay
 {
     if (nzero_preload < 0)
         throw std::invalid_argument("buffer_add_reader: nzero_preload must be >= 0");
-
+   
     buffer_reader_sptr r(
         new buffer_reader(buf, buf->index_sub(buf->d_write_index, nzero_preload), link));
     r->declare_sample_delay(delay);
     buf->d_readers.push_back(r.get());
 
+    // DEBUG
+    std::cerr << " [" << buf.get() << ";" << r.get() 
+              << "] buffer_add_reader() nzero_preload "  << nzero_preload 
+              << " -- RD_idx: " << r->d_read_index << std::endl;
+    
     return r;
 }
 
@@ -45,6 +50,8 @@ buffer_reader::buffer_reader(buffer_sptr buffer, unsigned int read_index, block_
       d_link(link),
       d_attr_delay(0)
 {
+    gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_reader");
+    
     s_buffer_reader_count++;
 }
 
@@ -64,7 +71,33 @@ unsigned buffer_reader::sample_delay() const { return d_attr_delay; }
 
 int buffer_reader::items_available() const
 {
-    return d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
+#if 1
+    int available = 0;
+    if (d_buffer->d_write_index == d_read_index)
+    {
+        if ((nitems_read() - sample_delay()) != d_buffer->nitems_written())
+        {
+            available = d_buffer->d_bufsize - d_read_index;
+        }
+    }
+    else
+    {
+        available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
+    }
+    
+#else
+    
+    int available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
+#endif
+    
+    std::ostringstream msg;
+    msg << "[" << d_buffer << ";" <<this << "] items_available() WR_idx: " 
+        << d_buffer->d_write_index << " -- WR items: " << d_buffer->nitems_written()
+        << " -- RD_idx: " << d_read_index << " -- RD items: " << nitems_read() 
+        << " (-" << d_attr_delay << ") -- available: " << available;
+    GR_LOG_DEBUG(d_logger, msg.str());
+    
+    return available;
 }
 
 const void* buffer_reader::read_pointer()

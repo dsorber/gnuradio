@@ -20,6 +20,9 @@
 #include <map>
 #include <memory>
 
+#define SINGLE_MAPPED
+//#define DOUBLE_MAPPED
+
 namespace gr {
 
 class vmcircbuf;

@@ -64,10 +64,10 @@ protected:
         if (s < 0)
             s += d_bufsize;
 
-        std::ostringstream msg;
-        msg << "[" << this << "] index_sub() a: " << a
-            << " -- b: " << b << " -- s: " << s;
-        GR_LOG_DEBUG(d_logger, msg.str());
+//        std::ostringstream msg;
+//        msg << "[" << this << "] index_sub() a: " << a
+//            << " -- b: " << b << " -- s: " << s;
+//        GR_LOG_DEBUG(d_logger, msg.str());
         
         assert((unsigned)s < d_bufsize);
         return s;
@@ -76,9 +76,11 @@ protected:
 private:
     
     friend class buffer_reader;
+#ifdef DOUBLE_MAPPED
     friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
                                                   size_t sizeof_item,
                                                   block_sptr link);
+#endif
     
     std::unique_ptr<gr::vmcircbuf> d_vmcircbuf;
     
