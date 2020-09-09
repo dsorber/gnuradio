@@ -12,6 +12,7 @@
 #include "config.h"
 #endif
 #include "vmcircbuf.h"
+#include <gnuradio/block.h>
 #include <gnuradio/buffer_double_mapped.h>
 #include <gnuradio/buffer_reader.h>
 #include <gnuradio/integer_math.h>
@@ -43,7 +44,13 @@ buffer_double_mapped::buffer_double_mapped(int nitems, size_t sizeof_item, block
     if (!allocate_buffer(nitems, sizeof_item))
         throw std::bad_alloc();
     
-    GR_LOG_DEBUG(d_logger, "buffer_double_mapped constructor");
+    // DBS - DEBUG
+    {
+        std::ostringstream msg;
+        msg << "[" << this << "] " 
+            << "buffer_double_mapped constructor -- history: " << link->history();
+        GR_LOG_DEBUG(d_logger, msg.str());
+    }
 }
 
 #ifdef DOUBLE_MAPPED
@@ -116,8 +123,8 @@ int buffer_double_mapped::space_available()
         return d_bufsize - 1; // See comment below
 
     else {
+        
         // Find out the maximum amount of data available to our readers
-
         int most_data = d_readers[0]->items_available();
         uint64_t min_items_read = d_readers[0]->nitems_read();
         for (size_t i = 1; i < d_readers.size(); i++) {

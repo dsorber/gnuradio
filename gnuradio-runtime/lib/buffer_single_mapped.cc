@@ -11,7 +11,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#include "vmcircbuf.h"
+#include <gnuradio/block.h>
 #include <gnuradio/buffer_single_mapped.h>
 #include <gnuradio/buffer_reader.h>
 #include <gnuradio/integer_math.h>
@@ -30,7 +30,15 @@ buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, block
     if (!allocate_buffer(nitems, sizeof_item))
         throw std::bad_alloc();
     
-    GR_LOG_DEBUG(d_logger, "buffer_single_mapped constructor");
+    // DBS - DEBUG
+    {
+        std::ostringstream msg;
+        msg << "[" << this << "] " 
+            << "buffer_single_mapped constructor -- history: " << link->history();
+        GR_LOG_DEBUG(d_logger, msg.str());
+    }
+        
+//    GR_LOG_DEBUG(d_logger, "buffer_single_mapped constructor");
 }
 
 #ifdef SINGLE_MAPPED
@@ -73,6 +81,7 @@ int buffer_single_mapped::space_available()
         return d_bufsize - 1; // See comment below
 
     else {
+        
         // Find the reader with the smallest read index
         unsigned min_read_index = d_readers[0]->d_read_index;
         buffer_reader* min_idx_reader = d_readers[0];
@@ -96,7 +105,7 @@ int buffer_single_mapped::space_available()
             // If the (min) read index and write index are equal then the buffer
             // is either completely empty or completely full depending on if 
             // the number of items read matches the number written
-            if (min_idx_reader->nitems_read() != nitems_written())
+            if ((min_idx_reader->nitems_read() - min_idx_reader->sample_delay()) != nitems_written())
             {
                 thecase = 2; 
                 space = 0;
@@ -115,7 +124,6 @@ int buffer_single_mapped::space_available()
         
         // DBS - DEBUG
         std::ostringstream msg;
-        std::string problem;
         msg << "[" << this << "] " 
             << "space_available() called  (case: " << thecase 
             << ")  d_write_index: "  << d_write_index 

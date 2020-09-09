@@ -40,6 +40,21 @@ public:
      */
     virtual int space_available();
     
+    virtual void update_reader_block_history(unsigned history)
+    {
+        d_max_reader_history = std::max(d_max_reader_history, history);
+        if (d_max_reader_history > 1)
+        {
+            d_write_index = d_max_reader_history - 1;
+            
+            std::ostringstream msg;
+            msg << "[" << this << "] " 
+                << "buffer_single_mapped constructor -- set wr index to: " 
+                << d_write_index;
+            GR_LOG_DEBUG(d_logger, msg.str());
+        }
+    }
+    
 protected:
     
     /*!

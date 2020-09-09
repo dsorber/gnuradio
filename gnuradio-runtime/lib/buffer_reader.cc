@@ -11,6 +11,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#include <gnuradio/block.h>
 #include <gnuradio/buffer.h>
 #include <gnuradio/buffer_reader.h>
 #include <gnuradio/integer_math.h>
@@ -33,6 +34,11 @@ buffer_add_reader(buffer_sptr buf, int nzero_preload, block_sptr link, int delay
     buffer_reader_sptr r(
         new buffer_reader(buf, buf->index_sub(buf->d_write_index, nzero_preload), link));
     r->declare_sample_delay(delay);
+    buf->update_reader_block_history(link->history());
+    if (link->history())
+    {
+        r->d_read_index = buf->index_sub(buf->d_write_index, nzero_preload);
+    }
     buf->d_readers.push_back(r.get());
 
     // DEBUG

@@ -71,6 +71,7 @@ buffer::buffer(int nitems, size_t sizeof_item, block_sptr link)
     : d_base(0),
       d_bufsize(0),
       d_max_reader_delay(0),
+      d_max_reader_history(0),
       d_sizeof_item(sizeof_item),
       d_link(link),
       d_write_index(0),

@@ -102,6 +102,11 @@ public:
 
     size_t get_sizeof_item() { return d_sizeof_item; }
 
+    virtual void update_reader_block_history(unsigned history)
+    {
+        d_max_reader_history = std::max(d_max_reader_history, history);
+    }
+    
     /*!
      * \brief  Adds a new tag to the buffer.
      *
@@ -132,7 +137,7 @@ public:
 
     std::multimap<uint64_t, tag_t>::iterator get_tags_begin()
     {
-        return d_item_tags.begin();
+        return d_item_tags.begin(); 
     }
     std::multimap<uint64_t, tag_t>::iterator get_tags_end() { return d_item_tags.end(); }
     std::multimap<uint64_t, tag_t>::iterator get_tags_lower_bound(uint64_t x)
@@ -164,6 +169,10 @@ protected:
 
     // Keep track of maximum sample delay of any reader; Only prune tags past this.
     unsigned d_max_reader_delay;
+    
+    // Keep track of the maximum sample history requirements of all blocks that
+    // consume from this buffer
+    unsigned d_max_reader_history;
 
     size_t d_sizeof_item; // in bytes
     std::vector<buffer_reader*> d_readers;
