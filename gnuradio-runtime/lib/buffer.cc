@@ -67,11 +67,12 @@ static inline long minimum_buffer_items(long type_size, long page_size)
 #endif
 
 
-buffer::buffer(int nitems, size_t sizeof_item, block_sptr link)
+buffer::buffer(int nitems, size_t sizeof_item, block_sptr link, BufferType d_buftype)
     : d_base(0),
       d_bufsize(0),
+      d_buftype(d_buftype),
       d_max_reader_delay(0),
-      d_max_reader_history(0),
+      d_max_reader_history(1),
       d_sizeof_item(sizeof_item),
       d_link(link),
       d_write_index(0),

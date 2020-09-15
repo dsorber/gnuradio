@@ -38,7 +38,7 @@ static inline long minimum_buffer_items(long type_size, long page_size)
 
 
 buffer_double_mapped::buffer_double_mapped(int nitems, size_t sizeof_item, block_sptr link)
-    : buffer(nitems, sizeof_item, link)
+    : buffer(nitems, sizeof_item, link, BufferType::DoubleMapped)
 {
     gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_double_mapped");
     if (!allocate_buffer(nitems, sizeof_item))

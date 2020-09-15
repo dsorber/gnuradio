@@ -34,16 +34,21 @@ buffer_add_reader(buffer_sptr buf, int nzero_preload, block_sptr link, int delay
     buffer_reader_sptr r(
         new buffer_reader(buf, buf->index_sub(buf->d_write_index, nzero_preload), link));
     r->declare_sample_delay(delay);
-    buf->update_reader_block_history(link->history());
-    if (link->history())
+    if (link->history() > delay)
     {
-        r->d_read_index = buf->index_sub(buf->d_write_index, nzero_preload);
+        // NOTE: this becomes "effective history"
+        buf->update_reader_block_history(link->history() - delay);
+        if (link->history() > 1)
+        {
+            r->d_read_index = buf->index_sub(buf->d_write_index, nzero_preload);
+        }
     }
     buf->d_readers.push_back(r.get());
 
     // DEBUG
     std::cerr << " [" << buf.get() << ";" << r.get() 
               << "] buffer_add_reader() nzero_preload "  << nzero_preload 
+              << " -- delay: " << delay << " -- history: " << link->history()
               << " -- RD_idx: " << r->d_read_index << std::endl;
     
     return r;
@@ -75,7 +80,7 @@ void buffer_reader::declare_sample_delay(unsigned delay)
 
 unsigned buffer_reader::sample_delay() const { return d_attr_delay; }
 
-int buffer_reader::items_available() const
+int buffer_reader::items_available() // const
 {
 #if 1
     int available = 0;
@@ -89,6 +94,22 @@ int buffer_reader::items_available() const
     else
     {
         available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
+        
+#ifdef SINGLE_MAPPED
+        // TODO: The items below this comment are exclusively for the single 
+        // mapped buffer case; figure out how to refactor this
+        if ((d_buffer->d_max_reader_history - 1) > 0 &&
+            available == (int)(d_buffer->d_max_reader_history - 1) &&
+            (available + d_read_index) == d_buffer->d_bufsize)
+        {
+            d_read_index = 0;
+            available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
+            
+            std::ostringstream msg;
+            msg << "[" << d_buffer << ";" <<this << "] items_available() RESET";
+            GR_LOG_DEBUG(d_logger, msg.str());
+        }
+#endif
     }
     
 #else

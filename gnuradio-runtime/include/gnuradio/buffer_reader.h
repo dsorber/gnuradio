@@ -73,7 +73,7 @@ public:
     /*!
      * \brief Return number of items available for reading.
      */
-    int items_available() const;
+    int items_available();  // const
 
     /*!
      * \brief Return buffer this reader reads from.

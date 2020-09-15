@@ -20,13 +20,19 @@
 #include <map>
 #include <memory>
 
-#define SINGLE_MAPPED
-//#define DOUBLE_MAPPED
+//#define SINGLE_MAPPED
+#define DOUBLE_MAPPED
 
 namespace gr {
 
 class vmcircbuf;
 class buffer_reader;
+
+enum class BufferType
+{
+    DoubleMapped,
+    SingleMapped
+};
 
 /*!
  * \brief Allocate a buffer that holds at least \p nitems of size \p sizeof_item.
@@ -166,6 +172,7 @@ private:
 protected:
     char* d_base;           // base address of buffer inside d_vmcircbuf.
     unsigned int d_bufsize; // in items
+    BufferType d_buftype;
 
     // Keep track of maximum sample delay of any reader; Only prune tags past this.
     unsigned d_max_reader_delay;
@@ -214,7 +221,7 @@ protected:
      * dependent boundary.  This is typically the system page size, but
      * under MS windows is 64KB.
      */
-    buffer(int nitems, size_t sizeof_item, block_sptr link);
+    buffer(int nitems, size_t sizeof_item, block_sptr link, BufferType d_buftype);
 
     /*!
      * \brief disassociate \p reader from this buffer

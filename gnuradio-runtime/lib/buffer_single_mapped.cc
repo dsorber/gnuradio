@@ -24,7 +24,7 @@
 namespace gr {
 
 buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, block_sptr link)
-    : buffer(nitems, sizeof_item, link)
+    : buffer(nitems, sizeof_item, link, BufferType::SingleMapped)
 {
     gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_single_mapped");
     if (!allocate_buffer(nitems, sizeof_item))
@@ -67,7 +67,7 @@ buffer_single_mapped::~buffer_single_mapped()
  */
 bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item)
 {
-    d_buffer.reset(new char[nitems * sizeof_item]);
+    d_buffer.reset(new char[nitems * sizeof_item]());
     
     d_base = d_buffer.get();
     d_bufsize = nitems;
@@ -98,7 +98,45 @@ int buffer_single_mapped::space_available()
         // buffer
         int thecase  = -1;  // REMOVE ME - just for debug
         int space = d_bufsize - d_write_index;
-        if (min_read_index == d_write_index)
+        
+        if (d_write_index == 0 && nitems_written() > 0 && d_max_reader_history > 1)
+        {
+            std::ostringstream msg;
+            
+            if (min_read_index > (d_max_reader_history - 1))
+            {
+                // Copy last max history - 1 samples back to the beginning of
+                // the buffer
+                
+                size_t bytes_to_copy = (d_max_reader_history - 1) * d_sizeof_item;
+                char* src_ptr = d_base + ((d_bufsize - (d_max_reader_history - 1)) * d_sizeof_item);
+                std::memcpy(d_base, src_ptr, bytes_to_copy);
+                
+                d_write_index = d_max_reader_history - 1;
+                space = (min_read_index - (d_max_reader_history - 1)) - d_write_index;
+
+                msg << "[" << this << "] " 
+                    << " RELOCATING d_write_index: "  << d_write_index 
+                    << " -- min_read_index: " << min_read_index 
+                    << " -- max_rdr_hist: " << (d_max_reader_history - 1)
+                    << " -- space: " << space;
+                GR_LOG_DEBUG(d_logger, msg.str());
+                
+                thecase = 18;
+            }
+            else
+            {
+                space = 0;        
+                msg << "[" << this << "] " 
+                    << " WAITING d_write_index: "  << d_write_index 
+                    << " -- min_read_index: " << min_read_index 
+                    << " -- max_rdr_hist: " << (d_max_reader_history - 1)
+                    << " -- space: " << space;
+                GR_LOG_DEBUG(d_logger, msg.str());
+                thecase = 19;
+            }
+        }
+        else if (min_read_index == d_write_index)
         {
             thecase = 1; 
             
@@ -131,7 +169,6 @@ int buffer_single_mapped::space_available()
             << " -- space: " << space;
         GR_LOG_DEBUG(d_logger, msg.str());
         
-        assert(space > 0);
         return space;
     }
 }
