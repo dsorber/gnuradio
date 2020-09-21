@@ -380,7 +380,8 @@ void block::set_min_output_buffer(int port, long min_output_buffer)
 }
 
 void block::allocate_detail(int ninputs, int noutputs, 
-                            const std::vector<int>& downstream_max_nitems_vec)
+                            const std::vector<int>& downstream_max_nitems_vec,
+                            const std::vector<uint64_t>& downstream_lcm_nitems_vec)
 {
     block_detail_sptr detail = make_block_detail(ninputs, noutputs);
 
@@ -389,7 +390,8 @@ void block::allocate_detail(int ninputs, int noutputs,
     for (int i = 0; i < noutputs; i++) {
         expand_minmax_buffer(i);
 
-        buffer_sptr buffer = allocate_buffer(i, downstream_max_nitems_vec[i]);
+        buffer_sptr buffer = allocate_buffer(i, downstream_max_nitems_vec[i], 
+                                             downstream_lcm_nitems_vec[i]);
         GR_LOG_DEBUG(d_debug_logger,
                      "Allocated buffer for output " + identifier() + " " +
                          std::to_string(i));
@@ -413,7 +415,8 @@ bool block::update_rate() const { return d_update_rate; }
 
 void block::enable_update_rate(bool en) { d_update_rate = en; }
 
-buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems)
+buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems,
+                                   uint64_t downstream_lcm_nitems)
 {
     int item_size = output_signature()->sizeof_stream_item(port);
 
@@ -452,10 +455,21 @@ buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems)
     // We're going to let this fail once and retry. If that fails, throw and exit.
     buffer_sptr buf;
     try {
-        buf = make_buffer(nitems, item_size, shared_from_base<block>());
+        // TEMP DEBUG
+//        std::cout << "downstream_max_nitems: " << downstream_max_nitems
+//                  << " -- downstream_lcm_nitems: " << downstream_lcm_nitems
+//                  << " -- output_multiple(): " << output_multiple()
+//                  << " -- nitems: " << nitems 
+//                  << " -- relative_rate: " << relative_rate()
+//                  << " -- fixed_rate: " << fixed_rate()
+//                  << " -- relative_rate_i(): " << relative_rate_i()
+//                  << " -- relative_rate_d(): " << relative_rate_d()
+//                  << " -- fixed_rate_noutput_to_ninput: " << fixed_rate_noutput_to_ninput(output_multiple())
+//                  << std::endl;
+        buf = make_buffer(nitems, item_size, downstream_lcm_nitems, shared_from_base<block>());
         
     } catch (std::bad_alloc&) {
-        buf = make_buffer(nitems, item_size, shared_from_base<block>());
+        buf = make_buffer(nitems, item_size, downstream_lcm_nitems, shared_from_base<block>());
     }
 
     // Set the max noutput items size here to make sure it's always

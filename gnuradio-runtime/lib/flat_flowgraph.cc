@@ -16,6 +16,7 @@
 #include <gnuradio/block_detail.h>
 #include <gnuradio/buffer.h>
 #include <gnuradio/buffer_reader.h>
+#include <gnuradio/integer_math.h>
 #include <gnuradio/logger.h>
 #include <gnuradio/prefs.h>
 #include <volk/volk.h>
@@ -80,10 +81,12 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
 
     // Determine the downstream max per output port
     std::vector<int> downstream_max_nitems(noutputs, 0);
+    std::vector<uint64_t> downstream_lcm_nitems(noutputs, 1);
 
     for (int i = 0; i < noutputs; i++) {
         int nitems = 0;
-        basic_block_vector_t downstream_blocks = calc_downstream_blocks(grblock, i);
+        uint64_t lcm_nitems = 1;
+        basic_block_vector_t downstream_blocks = calc_downstream_blocks(grblock, i);        
         for (basic_block_viter_t blk = downstream_blocks.begin(); 
              blk != downstream_blocks.end(); blk++) {
             block_sptr dgrblock = cast_to_block_sptr(*blk);
@@ -98,12 +101,20 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
             int history = dgrblock->history();
             nitems =
                 std::max(nitems, static_cast<int>(2 * (decimation * multiple + history)));
+            
+            // Calculate the LCM of downstream nitems
+            if (dgrblock->relative_rate_d() != 1)
+            {
+                lcm_nitems = GR_LCM(lcm_nitems, dgrblock->relative_rate_d());
+            }
         }
         downstream_max_nitems[i] = nitems;
+        downstream_lcm_nitems[i] = lcm_nitems;
     }
 
     // Allocate the block detail and necessary buffers
-    grblock->allocate_detail(ninputs, noutputs, downstream_max_nitems);
+    grblock->allocate_detail(ninputs, noutputs, downstream_max_nitems,
+                             downstream_lcm_nitems);
 }
 
 void flat_flowgraph::connect_block_inputs(basic_block_sptr block)

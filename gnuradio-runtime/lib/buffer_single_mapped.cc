@@ -23,11 +23,13 @@
 
 namespace gr {
 
-buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, block_sptr link)
+buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, 
+                                           uint64_t downstream_lcm_nitems, 
+                                           block_sptr link)
     : buffer(nitems, sizeof_item, link, BufferType::SingleMapped)
 {
     gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_single_mapped");
-    if (!allocate_buffer(nitems, sizeof_item))
+    if (!allocate_buffer(nitems, sizeof_item, downstream_lcm_nitems))
         throw std::bad_alloc();
     
     // DBS - DEBUG
@@ -42,7 +44,8 @@ buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, block
 }
 
 #ifdef SINGLE_MAPPED
-buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
+buffer_sptr make_buffer(int nitems, size_t sizeof_item, 
+                        uint64_t downstream_lcm_nitems, block_sptr link)
 {
     // DBS - DEBUG
     gr::logger_ptr logger;
@@ -53,7 +56,8 @@ buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
         << " -- sizeof_item: " << sizeof_item;
     GR_LOG_DEBUG(logger, msg.str());
     
-    return buffer_sptr(new buffer_single_mapped(nitems, sizeof_item, link));
+    return buffer_sptr(new buffer_single_mapped(nitems, sizeof_item, 
+                                                downstream_lcm_nitems, link));
 }
 #endif
 
@@ -65,8 +69,52 @@ buffer_single_mapped::~buffer_single_mapped()
  * sets d_vmcircbuf, d_base, d_bufsize.
  * returns true iff successful.
  */
-bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item)
+bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item,
+                                           uint64_t downstream_lcm_nitems)
 {
+    int orig_nitems = nitems;
+    
+    // NOTE: until blocks allocate their upstream buffer this won't work
+#if 0
+    // Unlike the double mapped buffer case that can easily wrap the single
+    // mapped case needs to be aware of rates
+    uint64_t factor = 1;
+    if (link()->fixed_rate())
+    {
+        factor = link()->fixed_rate_noutput_to_ninput(link()->output_multiple());
+    }
+    
+    if (link()->relative_rate() != 1.0)
+    {
+        factor = link()->relative_rate_d();
+    }
+
+    if (factor != 1)
+    {
+        uint64_t remainder = nitems % factor;
+        nitems += (factor - remainder);
+        
+        std::ostringstream msg;
+        msg << "allocate_buffer() called  nitems: " << orig_nitems 
+            << " -- factor: " << factor << " -- NEW nitems: " << nitems;
+        GR_LOG_DEBUG(d_logger, msg.str());
+    }
+#endif
+    
+    // Use the LCM of nitems to read from the downstream blocks to adjust the 
+    // size of the buffer so that it is a multiple of the LCM value
+    if (downstream_lcm_nitems > 1)
+    {
+        uint64_t remainder = nitems % downstream_lcm_nitems;
+        nitems += (remainder > 0) ? (downstream_lcm_nitems - remainder) : 0;
+        
+        std::ostringstream msg;
+        msg << "allocate_buffer() called  nitems: " << orig_nitems 
+            << " -- factor: " << downstream_lcm_nitems 
+            << " -- NEW nitems: " << nitems;
+        GR_LOG_DEBUG(d_logger, msg.str());
+    }
+    
     d_buffer.reset(new char[nitems * sizeof_item]());
     
     d_base = d_buffer.get();

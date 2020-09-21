@@ -79,6 +79,7 @@ private:
 #ifdef DOUBLE_MAPPED
     friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
                                                   size_t sizeof_item,
+                                                  uint64_t downstream_lcm_nitems, 
                                                   block_sptr link);
 #endif
     

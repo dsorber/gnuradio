@@ -323,7 +323,7 @@ public:
 
     /*!
      * \brief return a reference to the multiple precision rational
-     * represntation of the approximate output rate / input rate
+     * representation of the approximate output rate / input rate
      */
     mpq_class& mp_relative_rate() { return d_mp_relative_rate; }
 
@@ -521,7 +521,8 @@ public:
      * block.
      */
     void allocate_detail(int ninputs, int noutputs, 
-                         const std::vector<int>& downstream_max_nitems_vec);
+                         const std::vector<int>& downstream_max_nitems_vec,
+                         const std::vector<uint64_t>& downstream_lcm_nitems_vec);
     
 
     // --------------- Performance counter functions -------------
@@ -924,7 +925,8 @@ protected:
      * that the downstream max number of items must be passed in to this
      * function for consideration.
      */
-    buffer_sptr allocate_buffer(int port, int downstream_max_nitems);
+    buffer_sptr allocate_buffer(int port, int downstream_max_nitems,
+                                uint64_t downstream_lcm_nitems);
 
     std::vector<long> d_max_output_buffer;
     std::vector<long> d_min_output_buffer;

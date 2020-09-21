@@ -47,6 +47,7 @@ enum class BufferType
  */
 GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
                                        size_t sizeof_item,
+                                       uint64_t downstream_lcm_nitems,
                                        block_sptr link = block_sptr());
 
 /*!
@@ -206,7 +207,7 @@ protected:
      */
     virtual unsigned index_sub(unsigned a, unsigned b) = 0;
 
-    virtual bool allocate_buffer(int nitems, size_t sizeof_item) = 0;
+    virtual bool allocate_buffer(int nitems, size_t sizeof_item) { return false; };
 
     /*!
      * \brief constructor is private.  Use gr_make_buffer to create instances.

@@ -54,7 +54,8 @@ buffer_double_mapped::buffer_double_mapped(int nitems, size_t sizeof_item, block
 }
 
 #ifdef DOUBLE_MAPPED
-buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
+buffer_sptr make_buffer(int nitems, size_t sizeof_item, 
+                        uint64_t downstream_lcm_nitems, block_sptr link)
 {
     // DBS - DEBUG
     gr::logger_ptr logger;

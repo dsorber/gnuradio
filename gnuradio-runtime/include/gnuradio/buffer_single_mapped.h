@@ -61,7 +61,8 @@ protected:
      * sets d_vmcircbuf, d_base, d_bufsize.
      * returns true iff successful.
      */
-    bool allocate_buffer(int nitems, size_t sizeof_item);
+    bool allocate_buffer(int nitems, size_t sizeof_item, 
+                         uint64_t downstream_lcm_nitems);
     
     virtual unsigned index_add(unsigned a, unsigned b)
     {
@@ -98,6 +99,7 @@ private:
 #ifdef SINGLE_MAPPED
     friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
                                                   size_t sizeof_item,
+                                                  uint64_t downstream_lcm_nitems,
                                                   block_sptr link);
 #endif
     
@@ -116,7 +118,8 @@ private:
      * dependent boundary.  This is typically the system page size, but
      * under MS windows is 64KB.
      */
-    buffer_single_mapped(int nitems, size_t sizeof_item, block_sptr link);  
+    buffer_single_mapped(int nitems, size_t sizeof_item,
+                         uint64_t downstream_lcm_nitems, block_sptr link);  
 
 }; 
 
