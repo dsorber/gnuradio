@@ -83,6 +83,7 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
     std::vector<int> downstream_max_nitems(noutputs, 0);
     std::vector<uint64_t> downstream_lcm_nitems(noutputs, 1);
 
+    std::cout << "BLOCK: " << block->name() << std::endl;
     for (int i = 0; i < noutputs; i++) {
         int nitems = 0;
         uint64_t lcm_nitems = 1;
@@ -93,6 +94,8 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
             if (!dgrblock)
                 throw std::runtime_error("allocate_buffer found non-gr::block");
 
+            std::cout << "      DWNSTRM BLOCK: " << dgrblock->name() << std::endl;
+            
             // If any downstream blocks are decimators and/or have a large 
             // output_multiple, ensure we have a buffer at least twice their 
             // decimation factor*output_multiple
@@ -102,11 +105,38 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
             nitems =
                 std::max(nitems, static_cast<int>(2 * (decimation * multiple + history)));
             
-            // Calculate the LCM of downstream nitems
+            // Calculate the LCM of downstream reader nitems
+            std::cout << "        OUT MULTIPLE: " << multiple << std::endl;
+#if 1
+            gr_vector_int ninput_items_required(1);
+            dgrblock->forecast(multiple, ninput_items_required);
+            if (ninput_items_required[0] != 0)
+            {
+                std::cout << "        NINPUT_ITEMS: " << ninput_items_required[0] << std::endl;
+                lcm_nitems = GR_LCM(lcm_nitems, (uint64_t)ninput_items_required[0]);
+            }
+            else
+            {
+                lcm_nitems = GR_LCM(lcm_nitems, (uint64_t)multiple);
+            }
+
+#else      
             if (dgrblock->relative_rate_d() != 1)
             {
                 lcm_nitems = GR_LCM(lcm_nitems, dgrblock->relative_rate_d());
             }
+            if (dgrblock->fixed_rate())
+            {
+                lcm_nitems = GR_LCM(lcm_nitems, 
+                                    (uint64_t)dgrblock->fixed_rate_noutput_to_ninput(multiple));
+            }
+            else
+            {
+                lcm_nitems = GR_LCM(lcm_nitems, (uint64_t)multiple);
+            }
+#endif
+            std::cout << "        LCM NITEMS: " << lcm_nitems << std::endl;
+            
         }
         downstream_max_nitems[i] = nitems;
         downstream_lcm_nitems[i] = lcm_nitems;

@@ -118,7 +118,7 @@ int buffer_reader::items_available() // const
 #endif
     
     std::ostringstream msg;
-    msg << "[" << d_buffer << ";" <<this << "] items_available() WR_idx: " 
+    msg << "[" << d_buffer << ";" << this << "] items_available() WR_idx: " 
         << d_buffer->d_write_index << " -- WR items: " << d_buffer->nitems_written()
         << " -- RD_idx: " << d_read_index << " -- RD items: " << nitems_read() 
         << " (-" << d_attr_delay << ") -- available: " << available;
@@ -144,7 +144,7 @@ void buffer_reader::update_read_pointer(int nitems)
     
     // DBS - DEBUG
     std::ostringstream msg;
-    msg << "[" << d_buffer << "] update_read_pointer -- orig d_read_index: " 
+    msg << "[" << d_buffer << ";" << this << "] update_read_pointer -- orig d_read_index: " 
         << orig_rd_idx  << " -- nitems: " << nitems << " -- d_read_index: "
         << d_read_index;
     GR_LOG_DEBUG(d_buffer->d_logger, msg.str());

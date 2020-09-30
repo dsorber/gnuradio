@@ -66,7 +66,7 @@ buffer_single_mapped::~buffer_single_mapped()
 }
 
 /*!
- * sets d_vmcircbuf, d_base, d_bufsize.
+ * Allocates underlying buffer.
  * returns true iff successful.
  */
 bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item,
@@ -74,43 +74,45 @@ bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item,
 {
     int orig_nitems = nitems;
     
-    // NOTE: until blocks allocate their upstream buffer this won't work
-#if 0
-    // Unlike the double mapped buffer case that can easily wrap the single
-    // mapped case needs to be aware of rates
-    uint64_t factor = 1;
-    if (link()->fixed_rate())
-    {
-        factor = link()->fixed_rate_noutput_to_ninput(link()->output_multiple());
-    }
+    // Unlike the double mapped buffer case that can easily wrap back onto itself 
+    // for both reads and writes the single mapped case needs to be aware of read
+    // and write granularity and size the underlying buffer accordingly. Otherwise
+    // the calls to space_available() and items_available() may return values that
+    // are too small and the scheduler will get stuck.
+    uint64_t write_granularity = 1;
+    uint64_t lcm_granularity = 1;
+    
+//    if (link()->fixed_rate())
+//    {
+//        factor = link()->fixed_rate_noutput_to_ninput(link()->output_multiple());
+//    }
     
     if (link()->relative_rate() != 1.0)
     {
-        factor = link()->relative_rate_d();
+        write_granularity = link()->relative_rate_i();
     }
-
-    if (factor != 1)
-    {
-        uint64_t remainder = nitems % factor;
-        nitems += (factor - remainder);
-        
-        std::ostringstream msg;
-        msg << "allocate_buffer() called  nitems: " << orig_nitems 
-            << " -- factor: " << factor << " -- NEW nitems: " << nitems;
-        GR_LOG_DEBUG(d_logger, msg.str());
-    }
-#endif
+    write_granularity = GR_LCM(link()->relative_rate_i(), 
+                               (uint64_t)link()->output_multiple());
     
-    // Use the LCM of nitems to read from the downstream blocks to adjust the 
-    // size of the buffer so that it is a multiple of the LCM value
-    if (downstream_lcm_nitems > 1)
+    std::ostringstream msg;
+    msg << "WRITE GRANULARITY: " << write_granularity;
+    GR_LOG_DEBUG(d_logger, msg.str());
+    
+    
+    // Determine the LCM of the write and read granularity then use it to adjust 
+    // the size of the buffer so that it is a multiple of the LCM value
+    if (write_granularity != 1 || downstream_lcm_nitems != 1)
     {
-        uint64_t remainder = nitems % downstream_lcm_nitems;
-        nitems += (remainder > 0) ? (downstream_lcm_nitems - remainder) : 0;
+        lcm_granularity = GR_LCM(write_granularity, downstream_lcm_nitems);
+        
+        uint64_t remainder = nitems % lcm_granularity;
+        nitems += (remainder > 0) ? (lcm_granularity - remainder) : 0;
         
         std::ostringstream msg;
         msg << "allocate_buffer() called  nitems: " << orig_nitems 
-            << " -- factor: " << downstream_lcm_nitems 
+            << " -- read_multiple: " << downstream_lcm_nitems 
+            << " -- write_multiple: " << write_granularity 
+            << " -- lcm_multiple: " << lcm_granularity
             << " -- NEW nitems: " << nitems;
         GR_LOG_DEBUG(d_logger, msg.str());
     }

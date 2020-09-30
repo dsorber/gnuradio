@@ -454,18 +454,26 @@ buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems,
     //  "\n";
     // We're going to let this fail once and retry. If that fails, throw and exit.
     buffer_sptr buf;
+    
+    // DBS - DEBUG
+    GR_LOG_DEBUG(d_logger,
+                 "Block: " + name() + " allocated buffer for output " + identifier());
+    
     try {
         // TEMP DEBUG
-//        std::cout << "downstream_max_nitems: " << downstream_max_nitems
-//                  << " -- downstream_lcm_nitems: " << downstream_lcm_nitems
-//                  << " -- output_multiple(): " << output_multiple()
-//                  << " -- nitems: " << nitems 
-//                  << " -- relative_rate: " << relative_rate()
-//                  << " -- fixed_rate: " << fixed_rate()
-//                  << " -- relative_rate_i(): " << relative_rate_i()
-//                  << " -- relative_rate_d(): " << relative_rate_d()
-//                  << " -- fixed_rate_noutput_to_ninput: " << fixed_rate_noutput_to_ninput(output_multiple())
-//                  << std::endl;
+        std::ostringstream msg;
+        msg << "downstream_max_nitems: " << downstream_max_nitems
+            << " -- downstream_lcm_nitems: " << downstream_lcm_nitems
+            << " -- output_multiple(): " << output_multiple()
+            << " -- nitems: " << nitems 
+            << " -- relative_rate: " << relative_rate()
+            << " -- fixed_rate: " << fixed_rate()
+//            << " -- relative_rate_i(): " << relative_rate_i()
+//            << " -- relative_rate_d(): " << relative_rate_d()
+//            << " -- fixed_rate_noutput_to_ninput: " << fixed_rate_noutput_to_ninput(output_multiple())
+                ;
+//                 << std::endl;
+        GR_LOG_DEBUG(d_logger, msg.str());
         buf = make_buffer(nitems, item_size, downstream_lcm_nitems, shared_from_base<block>());
         
     } catch (std::bad_alloc&) {
