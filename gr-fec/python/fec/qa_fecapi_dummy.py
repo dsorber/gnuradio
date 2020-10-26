@@ -30,14 +30,14 @@ class test_fecapi_dummy(gr_unittest.TestCase):
     def test_parallelism0_00(self):
         frame_size = 30
         enc = fec.dummy_encoder_make(frame_size*8)
-        dec = fec.dummy_decoder.make(frame_size*8)
+        dec = fec.dummy_decoder_make(frame_size*8)
         threading = None
         self.test = _qa_helper(10*frame_size, enc, dec, threading)
         self.tb.connect(self.test)
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -51,7 +51,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -65,7 +65,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -79,7 +79,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -93,7 +93,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -107,7 +107,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -122,7 +122,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 
@@ -137,7 +137,7 @@ class test_fecapi_dummy(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 

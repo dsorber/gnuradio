@@ -111,7 +111,7 @@ class test_fecapi_repetition(gr_unittest.TestCase):
         self.tb.run()
 
         data_in = self.test.snk_input.data()
-        data_out =self.test.snk_output.data()
+        data_out = self.test.snk_output.data()
 
         self.assertEqual(data_in, data_out)
 

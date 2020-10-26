@@ -132,6 +132,7 @@ int buffer_single_mapped::space_available()
 
     else {
         
+#if 0
         // Find the reader with the smallest read index
         unsigned min_read_index = d_readers[0]->d_read_index;
         buffer_reader* min_idx_reader = d_readers[0];
@@ -143,6 +144,43 @@ int buffer_single_mapped::space_available()
             }
             min_items_read = std::min(min_items_read, d_readers[idx]->nitems_read());
         }
+#else
+        
+        size_t min_read_index_idx = 0;
+        size_t min_items_read_idx = 0;
+        bool same_nitems_read = true;
+        uint64_t min_items_read = d_readers[0]->nitems_read();
+        for (size_t idx = 1; idx < d_readers.size(); ++idx) {
+            // Record index of reader with minimum read-index
+            if (d_readers[idx]->d_read_index < d_readers[min_read_index_idx]->d_read_index) {
+                min_read_index_idx = idx;
+            }
+            
+            // Set flag if all readers have read same number of items
+            same_nitems_read &= (d_readers[0]->nitems_read() == d_readers[idx]->nitems_read());
+                    
+            // Record index of reader with minimum nitems read
+            if (d_readers[idx]->nitems_read() < d_readers[min_items_read_idx]->d_read_index) {
+                min_items_read_idx = idx;
+            }
+            min_items_read = std::min(min_items_read, d_readers[idx]->nitems_read());
+        }
+        
+        unsigned reader_idx = 0;
+//        if (same_nitems_read) {
+//            // If all readers have read the same number of items choose the
+//            // reader with the minimum read-index
+//            reader_idx = min_read_index_idx;
+//        } else {
+//            // Otherwise choose the reader who has read the smallest number of
+//            // items
+//            reader_idx = min_items_read_idx;
+//        }
+        reader_idx = min_items_read_idx;
+        
+        buffer_reader* min_idx_reader = d_readers[reader_idx];
+        unsigned min_read_index = d_readers[reader_idx]->d_read_index;
+#endif
         
         // For single mapped buffer there is no wrapping beyond the end of the
         // buffer

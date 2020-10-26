@@ -98,7 +98,8 @@ int buffer_reader::items_available() // const
 #ifdef SINGLE_MAPPED
         // TODO: The items below this comment are exclusively for the single 
         // mapped buffer case; figure out how to refactor this
-        if ((d_buffer->d_max_reader_history - 1) > 0 &&
+        // NOTE: d_max_reader_history is always at least one
+        if (d_buffer->d_max_reader_history > 1 &&
             available == (int)(d_buffer->d_max_reader_history - 1) &&
             (available + d_read_index) == d_buffer->d_bufsize)
         {
