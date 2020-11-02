@@ -98,11 +98,11 @@ int buffer_reader::items_available() // const
         {
             available = d_buffer->d_bufsize - d_read_index;
             
-            if ((d_buffer->d_max_reader_history > 1) &&
-                available <= (int)(d_buffer->d_max_reader_history - 1) &&
+            if (d_buffer->d_has_history &&
+                available <= (int)(d_buffer->d_downstream_lcm_nitems - 1) &&
                 (available + d_read_index) == d_buffer->d_bufsize)
             {
-                d_read_index = (d_buffer->d_max_reader_history - 1) - available;
+                d_read_index = (d_buffer->d_downstream_lcm_nitems - 1) - available;
                 available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
 
                 std::ostringstream msg;
@@ -120,11 +120,11 @@ int buffer_reader::items_available() // const
         // TODO: The items below this comment are exclusively for the single 
         // mapped buffer case; figure out how to refactor this
         // NOTE: d_max_reader_history is always at least one
-        if ((d_buffer->d_max_reader_history > 1) &&
-            available <= (int)(d_buffer->d_max_reader_history - 1) &&
+        if (d_buffer->d_has_history &&
+            available <= (int)(d_buffer->d_downstream_lcm_nitems - 1) &&
             (available + d_read_index) == d_buffer->d_bufsize)
         {
-            d_read_index = (d_buffer->d_max_reader_history - 1) - available;
+            d_read_index = (d_buffer->d_downstream_lcm_nitems - 1) - available;
             available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
             
             std::ostringstream msg;
@@ -143,10 +143,7 @@ int buffer_reader::items_available() // const
     msg << "[" << d_buffer << ";" << this << "] items_available() WR_idx: " 
         << d_buffer->d_write_index << " -- WR items: " << d_buffer->nitems_written()
         << " -- RD_idx: " << d_read_index << " -- RD items: " << nitems_read() 
-        << " (-" << d_attr_delay << ") -- available: " << available
-        << " rst: " << int(d_buffer->d_max_reader_history > 1) << " " 
-        << int(available == (int)(d_buffer->d_max_reader_history - 1)) << " "
-        << int((available + d_read_index) == d_buffer->d_bufsize);
+        << " (-" << d_attr_delay << ") -- available: " << available;
     GR_LOG_DEBUG(d_logger, msg.str());
     
     return available;

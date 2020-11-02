@@ -52,6 +52,8 @@ public:
                 << "buffer_single_mapped constructor -- set wr index to: " 
                 << d_write_index;
             GR_LOG_DEBUG(d_logger, msg.str());
+            
+            d_has_history = true;
         }
     }
     

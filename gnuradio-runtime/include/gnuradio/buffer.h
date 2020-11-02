@@ -116,6 +116,7 @@ public:
     virtual void update_reader_block_history(unsigned history)
     {
         d_max_reader_history = std::max(d_max_reader_history, history);
+        d_has_history = (d_max_reader_history > 1);
     }
     
     /*!
@@ -185,6 +186,9 @@ protected:
     // Keep track of the maximum sample history requirements of all blocks that
     // consume from this buffer
     unsigned d_max_reader_history;
+    
+    // Indicates if d_max_reader_history > 1
+    bool d_has_history;
 
     size_t d_sizeof_item; // in bytes
     std::vector<buffer_reader*> d_readers;
@@ -200,6 +204,11 @@ protected:
     bool d_done;
     std::multimap<uint64_t, tag_t> d_item_tags;
     uint64_t d_last_min_items_read;
+    
+    // TEMP; this is only used for buffer_single_mapped but needs to be here
+    // until buffer_reader is refactored
+    uint64_t d_downstream_lcm_nitems;
+    uint64_t d_write_multiple;
 
     /*!
      * \brief  Increment read or write index for this buffer

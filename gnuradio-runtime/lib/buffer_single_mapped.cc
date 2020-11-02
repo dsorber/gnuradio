@@ -122,6 +122,9 @@ bool buffer_single_mapped::allocate_buffer(int nitems, size_t sizeof_item,
     d_base = d_buffer.get();
     d_bufsize = nitems;
     
+    d_downstream_lcm_nitems = downstream_lcm_nitems;
+    d_write_multiple = write_granularity;
+    
     return true;
 }
 
@@ -132,23 +135,8 @@ int buffer_single_mapped::space_available()
 
     else {
         
-#if 0
-        // Find the reader with the smallest read index
-        unsigned min_read_index = d_readers[0]->d_read_index;
-        buffer_reader* min_idx_reader = d_readers[0];
-        uint64_t min_items_read = d_readers[0]->nitems_read();
-        for (size_t idx = 1; idx < d_readers.size(); ++idx) {
-            if (d_readers[idx]->d_read_index < min_read_index) {
-                min_read_index = d_readers[idx]->d_read_index;
-                min_idx_reader = d_readers[idx];
-            }
-            min_items_read = std::min(min_items_read, d_readers[idx]->nitems_read());
-        }
-#else
-        
         size_t min_read_index_idx = 0;
         size_t min_items_read_idx = 0;
-        bool same_nitems_read = true;
         uint64_t min_items_read = d_readers[0]->nitems_read();
         for (size_t idx = 1; idx < d_readers.size(); ++idx) {
             // Record index of reader with minimum read-index
@@ -156,9 +144,6 @@ int buffer_single_mapped::space_available()
                 min_read_index_idx = idx;
             }
             
-            // Set flag if all readers have read same number of items
-            same_nitems_read &= (d_readers[0]->nitems_read() == d_readers[idx]->nitems_read());
-                    
             // Record index of reader with minimum nitems read
             if (d_readers[idx]->nitems_read() < d_readers[min_items_read_idx]->d_read_index) {
                 min_items_read_idx = idx;
@@ -166,50 +151,43 @@ int buffer_single_mapped::space_available()
             min_items_read = std::min(min_items_read, d_readers[idx]->nitems_read());
         }
         
-        unsigned reader_idx = 0;
-//        if (same_nitems_read) {
-//            // If all readers have read the same number of items choose the
-//            // reader with the minimum read-index
-//            reader_idx = min_read_index_idx;
-//        } else {
-//            // Otherwise choose the reader who has read the smallest number of
-//            // items
-//            reader_idx = min_items_read_idx;
-//        }
-        reader_idx = min_items_read_idx;
-        
-        buffer_reader* min_idx_reader = d_readers[reader_idx];
-        unsigned min_read_index = d_readers[reader_idx]->d_read_index;
-#endif
+        buffer_reader* min_idx_reader = d_readers[min_items_read_idx];
+        unsigned min_read_index = d_readers[min_items_read_idx]->d_read_index;
         
         // For single mapped buffer there is no wrapping beyond the end of the
         // buffer
         int thecase  = -1;  // REMOVE ME - just for debug
         int space = d_bufsize - d_write_index;
         
-        if (d_write_index == 0 && nitems_written() > 0 && d_max_reader_history > 1)
+        if (nitems_written() > 0 && d_has_history && 
+            (space < d_write_multiple || d_write_index == 0))
         {
             std::ostringstream msg;
-            
-            if (min_read_index > (d_max_reader_history - 1))
+            if (min_read_index > (d_downstream_lcm_nitems - 1))
             {
-                // Copy last max history - 1 samples back to the beginning of
-                // the buffer
-                
-                size_t bytes_to_copy = (d_max_reader_history - 1) * d_sizeof_item;
-                char* src_ptr = d_base + ((d_bufsize - (d_max_reader_history - 1)) * d_sizeof_item);
+                // Copy last max d_downstream_lcm_nitems - 1 samples back to the 
+                // beginning of the buffer
+                size_t bytes_to_copy = (d_downstream_lcm_nitems - 1) * d_sizeof_item;
+                char* src_ptr = d_base;                
+                if (d_write_index == 0)
+                {
+                    src_ptr += ((d_bufsize - (d_downstream_lcm_nitems - 1)) * d_sizeof_item);
+                }
+                else
+                {
+                    src_ptr += ((d_bufsize - (d_downstream_lcm_nitems - 1 ) - space) * d_sizeof_item);
+                }
                 std::memcpy(d_base, src_ptr, bytes_to_copy);
                 
-                d_write_index = d_max_reader_history - 1;
-                space = (min_read_index - (d_max_reader_history - 1)) - d_write_index;
+                d_write_index = d_downstream_lcm_nitems - 1;
+                space = (min_read_index - (d_downstream_lcm_nitems - 1)) - d_write_index;
 
                 msg << "[" << this << "] " 
                     << " RELOCATING d_write_index: "  << d_write_index 
                     << " -- min_read_index: " << min_read_index 
-                    << " -- max_rdr_hist: " << (d_max_reader_history - 1)
+                    << " -- dstream_lcm_nitems: " << (d_downstream_lcm_nitems - 1)
                     << " -- space: " << space;
                 GR_LOG_DEBUG(d_logger, msg.str());
-                
                 thecase = 18;
             }
             else
@@ -218,7 +196,7 @@ int buffer_single_mapped::space_available()
                 msg << "[" << this << "] " 
                     << " WAITING d_write_index: "  << d_write_index 
                     << " -- min_read_index: " << min_read_index 
-                    << " -- max_rdr_hist: " << (d_max_reader_history - 1)
+                    << " -- dstream_lcm_nitems: " << (d_downstream_lcm_nitems - 1)
                     << " -- space: " << space;
                 GR_LOG_DEBUG(d_logger, msg.str());
                 thecase = 19;

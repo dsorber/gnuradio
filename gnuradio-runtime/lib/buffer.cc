@@ -73,12 +73,15 @@ buffer::buffer(int nitems, size_t sizeof_item, block_sptr link, BufferType d_buf
       d_buftype(d_buftype),
       d_max_reader_delay(0),
       d_max_reader_history(1),
+      d_has_history(false),
       d_sizeof_item(sizeof_item),
       d_link(link),
       d_write_index(0),
       d_abs_write_offset(0),
       d_done(false),
-      d_last_min_items_read(0)
+      d_last_min_items_read(0),
+      d_downstream_lcm_nitems(0), // TEMP
+      d_write_multiple(0)
 {
     gr::configure_default_loggers(d_logger, d_debug_logger, "buffer");
 //    if (!allocate_buffer(nitems, sizeof_item))
