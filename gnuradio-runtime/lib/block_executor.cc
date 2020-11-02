@@ -453,7 +453,13 @@ block_executor::state block_executor::run_one_iteration()
 
         // ask the block how much input they need to produce noutput_items
         m->forecast(noutput_items, d_ninput_items_required);
-
+        // DEBUG here
+        LOG(std::ostringstream msg; msg << m << " -- FCAST noutput_items=" 
+                << noutput_items << " inputs_required=" << d_ninput_items_required[0]
+                << " inputs_avail=" << d_ninput_items[0];
+            GR_LOG_INFO(d_debug_logger, msg.str()));
+        
+        
         // See if we've got sufficient input available and make sure we
         // didn't overflow on the input.
         int i;
@@ -544,6 +550,8 @@ block_executor::state block_executor::run_one_iteration()
 
         LOG(std::ostringstream msg;
             msg << m << " -- general_work: noutput_items = " << noutput_items 
+                << " ninput_items=" << (d->ninputs() >= 1 ? d_ninput_items[0] : 0)
+                << " ninput_req=" << (d->ninputs() >= 1 ? d_ninput_items_required[0] : 0)
                 << " result = " << n;
             GR_LOG_INFO(d_debug_logger, msg.str()););
 

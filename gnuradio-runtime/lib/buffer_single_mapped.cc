@@ -231,7 +231,8 @@ int buffer_single_mapped::space_available()
             // If the (min) read index and write index are equal then the buffer
             // is either completely empty or completely full depending on if 
             // the number of items read matches the number written
-            if ((min_idx_reader->nitems_read() - min_idx_reader->sample_delay()) != nitems_written())
+            size_t offset = ((d_max_reader_history - 1) + min_idx_reader->sample_delay());
+            if ((min_idx_reader->nitems_read() - offset) != nitems_written())
             {
                 thecase = 2; 
                 space = 0;
@@ -252,9 +253,9 @@ int buffer_single_mapped::space_available()
         std::ostringstream msg;
         msg << "[" << this << "] " 
             << "space_available() called  (case: " << thecase 
-            << ")  d_write_index: "  << d_write_index 
-            << " -- min_read_index: " << min_read_index 
-            << " -- space: " << space;
+            << ")  d_write_index: "  << d_write_index << " (" << nitems_written() << ") "
+            << " -- min_read_index: " << min_read_index << " (" << min_idx_reader->nitems_read() << ") "
+            << " -- space: " << space << " (sample delay: " << min_idx_reader->sample_delay() << ")";
         GR_LOG_DEBUG(d_logger, msg.str());
         
         return space;
