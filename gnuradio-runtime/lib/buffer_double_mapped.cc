@@ -53,23 +53,6 @@ buffer_double_mapped::buffer_double_mapped(int nitems, size_t sizeof_item, block
     }
 }
 
-#ifdef DOUBLE_MAPPED
-buffer_sptr make_buffer(int nitems, size_t sizeof_item, 
-                        uint64_t downstream_lcm_nitems, block_sptr link)
-{
-    // DBS - DEBUG
-    gr::logger_ptr logger;
-    gr::logger_ptr debug_logger;
-    gr::configure_default_loggers(logger, debug_logger, "buffer_double_mapped");
-    std::ostringstream msg;
-    msg << "buffer_double_mapped make_buffer() called  nitems: " << nitems 
-        << " -- sizeof_item: " << sizeof_item;
-    GR_LOG_DEBUG(logger, msg.str());
-    
-    return buffer_sptr(new buffer_double_mapped(nitems, sizeof_item, link));
-}
-#endif
-
 buffer_double_mapped::~buffer_double_mapped()
 {
 }

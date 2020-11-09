@@ -14,6 +14,7 @@
 #include <gnuradio/block.h>
 #include <gnuradio/buffer.h>
 #include <gnuradio/buffer_reader.h>
+#include <gnuradio/buffer_reader_sm.h>
 #include <gnuradio/integer_math.h>
 #include <gnuradio/math.h>
 #include <assert.h>
@@ -30,19 +31,30 @@ buffer_add_reader(buffer_sptr buf, int nzero_preload, block_sptr link, int delay
 {
     if (nzero_preload < 0)
         throw std::invalid_argument("buffer_add_reader: nzero_preload must be >= 0");
-   
-    buffer_reader_sptr r(
-        new buffer_reader(buf, buf->index_sub(buf->d_write_index, nzero_preload), link));
-    r->declare_sample_delay(delay);
-    if (link->history() > delay)
+    
+    buffer_reader_sptr r;
+    
+    if (buf->get_type() == BufferType::DoubleMapped)
     {
-        // NOTE: this becomes "effective history"
-        buf->update_reader_block_history(link->history() - delay);
-        if (link->history() > 1)
-        {
-            r->d_read_index = buf->index_sub(buf->d_write_index, nzero_preload);
-        }
+        r.reset(new buffer_reader(buf, buf->index_sub(buf->d_write_index, nzero_preload), 
+                                  link));
+        r->declare_sample_delay(delay);
     }
+    else if (buf->get_type() == BufferType::SingleMapped)
+    {
+        r.reset(new buffer_reader_sm(buf, buf->index_sub(buf->d_write_index, nzero_preload), 
+                                     link));
+        r->declare_sample_delay(delay);
+        if (link->history() > delay) {
+            // NOTE: this becomes "effective history"
+            buf->update_reader_block_history(link->history() - delay);
+    //        buf->update_reader_block_history(link->history()); // EXPERIMENT
+            if (link->history() > 1) {
+                r->d_read_index = buf->index_sub(buf->d_write_index, nzero_preload);
+            }
+        }
+    }    
+    
     buf->d_readers.push_back(r.get());
 
     // DEBUG
@@ -82,65 +94,13 @@ unsigned buffer_reader::sample_delay() const { return d_attr_delay; }
 
 int buffer_reader::items_available() // const
 {
-#if 1
-    int available = 0;
-    if (d_buffer->d_write_index == d_read_index)
-    {
-        std::ostringstream msg;
-        msg << "[" << d_buffer << ";" << this << "] items_available() EQUAL";
-        GR_LOG_DEBUG(d_logger, msg.str());
-
-#ifdef SINGLE_MAPPED        
-        // TODO: The items below this comment are exclusively for the single 
-        // mapped buffer case; figure out how to refactor this
-        // NOTE: d_max_reader_history is always at least one
-        if ((nitems_read() - sample_delay()) != d_buffer->nitems_written())
-        {
-            available = d_buffer->d_bufsize - d_read_index;
-            
-            if (d_buffer->d_has_history &&
-                available <= (int)(d_buffer->d_downstream_lcm_nitems - 1) &&
-                (available + d_read_index) == d_buffer->d_bufsize)
-            {
-                d_read_index = (d_buffer->d_downstream_lcm_nitems - 1) - available;
-                available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
-
-                std::ostringstream msg;
-                msg << "[" << d_buffer << ";" << this << "] items_available() RESET";
-                GR_LOG_DEBUG(d_logger, msg.str());
-            }
-        }
-#endif
-    }
-    else
-    {
-        available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
-        
-#ifdef SINGLE_MAPPED
-        // TODO: The items below this comment are exclusively for the single 
-        // mapped buffer case; figure out how to refactor this
-        // NOTE: d_max_reader_history is always at least one
-        if (d_buffer->d_has_history &&
-            available <= (int)(d_buffer->d_downstream_lcm_nitems - 1) &&
-            (available + d_read_index) == d_buffer->d_bufsize)
-        {
-            d_read_index = (d_buffer->d_downstream_lcm_nitems - 1) - available;
-            available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
-            
-            std::ostringstream msg;
-            msg << "[" << d_buffer << ";" << this << "] items_available() RESET";
-            GR_LOG_DEBUG(d_logger, msg.str());
-        }
-#endif
-    }
-    
-#else
-    
     int available = d_buffer->index_sub(d_buffer->d_write_index, d_read_index);
-#endif
     
+    // DBS - DEBUG
     std::ostringstream msg;
-    msg << "[" << d_buffer << ";" << this << "] items_available() WR_idx: " 
+    std::string equalLabel;
+    
+    msg << "[" << d_buffer << ";" << this << "] " << equalLabel << "items_available() WR_idx: " 
         << d_buffer->d_write_index << " -- WR items: " << d_buffer->nitems_written()
         << " -- RD_idx: " << d_read_index << " -- RD items: " << nitems_read() 
         << " (-" << d_attr_delay << ") -- available: " << available;

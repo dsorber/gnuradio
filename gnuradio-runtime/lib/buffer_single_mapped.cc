@@ -26,7 +26,8 @@ namespace gr {
 buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item, 
                                            uint64_t downstream_lcm_nitems, 
                                            block_sptr link)
-    : buffer(nitems, sizeof_item, link, BufferType::SingleMapped)
+    : buffer(nitems, sizeof_item, link, BufferType::SingleMapped),
+      d_test(nullptr, std::bind(&buffer_single_mapped::deleter, this, std::placeholders::_1))
 {
     gr::configure_default_loggers(d_logger, d_debug_logger, "buffer_single_mapped");
     if (!allocate_buffer(nitems, sizeof_item, downstream_lcm_nitems))
@@ -39,27 +40,7 @@ buffer_single_mapped::buffer_single_mapped(int nitems, size_t sizeof_item,
             << "buffer_single_mapped constructor -- history: " << link->history();
         GR_LOG_DEBUG(d_logger, msg.str());
     }
-        
-//    GR_LOG_DEBUG(d_logger, "buffer_single_mapped constructor");
 }
-
-#ifdef SINGLE_MAPPED
-buffer_sptr make_buffer(int nitems, size_t sizeof_item, 
-                        uint64_t downstream_lcm_nitems, block_sptr link)
-{
-    // DBS - DEBUG
-    gr::logger_ptr logger;
-    gr::logger_ptr debug_logger;
-    gr::configure_default_loggers(logger, debug_logger, "buffer_single_mapped");
-    std::ostringstream msg;
-    msg << "make_buffer() called  nitems: " << nitems 
-        << " -- sizeof_item: " << sizeof_item;
-    GR_LOG_DEBUG(logger, msg.str());
-    
-    return buffer_sptr(new buffer_single_mapped(nitems, sizeof_item, 
-                                                downstream_lcm_nitems, link));
-}
-#endif
 
 buffer_single_mapped::~buffer_single_mapped()
 {

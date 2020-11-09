@@ -450,8 +450,6 @@ buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems,
     // ensure we have a buffer at least twice their decimation factor*output_multiple
     nitems = std::max(nitems, downstream_max_nitems);
 
-    //  std::cout << "make_buffer(" << nitems << ", " << item_size << ", " << grblock <<
-    //  "\n";
     // We're going to let this fail once and retry. If that fails, throw and exit.
     buffer_sptr buf;
     
@@ -460,19 +458,14 @@ buffer_sptr block::allocate_buffer(int port, int downstream_max_nitems,
                  "Block: " + name() + " allocated buffer for output " + identifier());
     
     try {
-        // TEMP DEBUG
+        // DBS - DEBUG
         std::ostringstream msg;
         msg << "downstream_max_nitems: " << downstream_max_nitems
             << " -- downstream_lcm_nitems: " << downstream_lcm_nitems
             << " -- output_multiple(): " << output_multiple()
             << " -- nitems: " << nitems 
             << " -- relative_rate: " << relative_rate()
-            << " -- fixed_rate: " << fixed_rate()
-//            << " -- relative_rate_i(): " << relative_rate_i()
-//            << " -- relative_rate_d(): " << relative_rate_d()
-//            << " -- fixed_rate_noutput_to_ninput: " << fixed_rate_noutput_to_ninput(output_multiple())
-                ;
-//                 << std::endl;
+            << " -- fixed_rate: " << fixed_rate();
         GR_LOG_DEBUG(d_logger, msg.str());
         buf = make_buffer(nitems, item_size, downstream_lcm_nitems, shared_from_base<block>());
         

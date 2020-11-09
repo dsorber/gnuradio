@@ -52,7 +52,7 @@ public:
     gr::logger_ptr d_logger;
     gr::logger_ptr d_debug_logger;
     
-    ~buffer_reader();
+    virtual ~buffer_reader();
 
     /*!
      * Declares the sample delay for this reader.
@@ -73,7 +73,7 @@ public:
     /*!
      * \brief Return number of items available for reading.
      */
-    int items_available();  // const
+    virtual int items_available();  // const
 
     /*!
      * \brief Return buffer this reader reads from.
@@ -140,7 +140,7 @@ public:
 
     // -------------------------------------------------------------------------
 
-private:
+protected:
     friend class buffer;
     friend class buffer_double_mapped;
     friend class buffer_single_mapped;

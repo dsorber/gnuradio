@@ -27,6 +27,7 @@ namespace gr {
 
 class vmcircbuf;
 class buffer_reader;
+class buffer_reader_sm;
 
 enum class BufferType
 {
@@ -61,6 +62,14 @@ public:
     gr::logger_ptr d_debug_logger;
 
     virtual ~buffer();
+    
+    /*!
+     * \brief return the buffer's type
+     */
+    BufferType get_type()
+    {
+        return d_buftype;
+    }
 
     /*!
      * \brief return number of items worth of space available for writing
@@ -165,11 +174,12 @@ public:
 
 private:
     friend class buffer_reader;
-    // DBS - this is temporarily moving to buffer_double_mapped until a better
-    // interface is determined
-//    friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
-//                                                  size_t sizeof_item,
-//                                                  block_sptr link);
+    friend class buffer_reader_sm;
+    
+    friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
+                                                  size_t sizeof_item,
+                                                  uint64_t downstream_lcm_nitems,
+                                                  block_sptr link);
     friend GR_RUNTIME_API buffer_reader_sptr buffer_add_reader(buffer_sptr buf,
                                                                int nzero_preload,
                                                                block_sptr link,

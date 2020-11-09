@@ -83,7 +83,10 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
     std::vector<int> downstream_max_nitems(noutputs, 0);
     std::vector<uint64_t> downstream_lcm_nitems(noutputs, 1);
 
-    std::cout << "BLOCK: " << block->name() << std::endl;
+    
+    std::ostringstream msg;
+    msg << "BLOCK: " << block->name();
+    GR_LOG_DEBUG(d_logger, msg.str()); // could also be d_debug_logger
     for (int i = 0; i < noutputs; i++) {
         int nitems = 0;
         uint64_t lcm_nitems = 1;
@@ -93,8 +96,10 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
             block_sptr dgrblock = cast_to_block_sptr(*blk);
             if (!dgrblock)
                 throw std::runtime_error("allocate_buffer found non-gr::block");
-
-            std::cout << "      DWNSTRM BLOCK: " << dgrblock->name() << std::endl;
+            
+            msg.str("");
+            msg << "      DWNSTRM BLOCK: " << dgrblock->name();
+            GR_LOG_DEBUG(d_logger, msg.str());
             
             // If any downstream blocks are decimators and/or have a large 
             // output_multiple, ensure we have a buffer at least twice their 
@@ -106,13 +111,17 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
                 std::max(nitems, static_cast<int>(2 * (decimation * multiple + history)));
             
             // Calculate the LCM of downstream reader nitems
-            std::cout << "        OUT MULTIPLE: " << multiple << std::endl;
+            msg.str("");
+            msg << "        OUT MULTIPLE: " << multiple;
+            GR_LOG_DEBUG(d_logger, msg.str());
 #if 1
             gr_vector_int ninput_items_required(1);
             dgrblock->forecast(multiple, ninput_items_required);
             if (ninput_items_required[0] != 0)
             {
-                std::cout << "        NINPUT_ITEMS: " << ninput_items_required[0] << std::endl;
+                msg.str("");
+                msg << "        NINPUT_ITEMS: " << ninput_items_required[0];
+                GR_LOG_DEBUG(d_logger, msg.str());
                 lcm_nitems = GR_LCM(lcm_nitems, (uint64_t)ninput_items_required[0]);
             }
             else
@@ -135,7 +144,9 @@ void flat_flowgraph::allocate_block_detail(basic_block_sptr block)
                 lcm_nitems = GR_LCM(lcm_nitems, (uint64_t)multiple);
             }
 #endif
-            std::cout << "        LCM NITEMS: " << lcm_nitems << std::endl;
+            msg.str("");
+            msg << "        LCM NITEMS: " << lcm_nitems;
+            GR_LOG_DEBUG(d_logger, msg.str());
             
         }
         downstream_max_nitems[i] = nitems;

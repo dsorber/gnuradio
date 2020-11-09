@@ -49,6 +49,7 @@ add_library(gnuradio-runtime
   buffer.cc
   buffer_double_mapped.cc
   buffer_reader.cc
+  buffer_reader_sm.cc
   buffer_single_mapped.cc
   flat_flowgraph.cc
   flowgraph.cc

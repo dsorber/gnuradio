@@ -11,6 +11,8 @@
 #ifndef INCLUDED_GR_RUNTIME_BUFFER_SINGLE_MAPPED_H
 #define INCLUDED_GR_RUNTIME_BUFFER_SINGLE_MAPPED_H
 
+#include <functional>
+
 #include <gnuradio/api.h>
 #include <gnuradio/logger.h>
 #include <gnuradio/buffer.h>
@@ -20,6 +22,10 @@
 namespace gr {
 
 class vmcircbuf;
+
+//struct Deleter {
+//    void operator()(char** b) { ; }
+//};
     
 /*!
  * TODO: update this
@@ -57,6 +63,11 @@ public:
         }
     }
     
+    void deleter(char** ptr)
+    {
+        link();
+    }
+    
 protected:
     
     /*!
@@ -84,13 +95,7 @@ protected:
 
         if (s < 0)
             s = d_bufsize - b;
-//            s += d_bufsize;
 
-//        std::ostringstream msg;
-//        msg << "[" << this << "] index_sub() a: " << a
-//            << " -- b: " << b << " -- s: " << s;
-//        GR_LOG_DEBUG(d_logger, msg.str());
-        
         assert((unsigned)s < d_bufsize);
         return s;
     }
@@ -98,14 +103,15 @@ protected:
 private:
     
     friend class buffer_reader;
-#ifdef SINGLE_MAPPED
+    
     friend GR_RUNTIME_API buffer_sptr make_buffer(int nitems,
                                                   size_t sizeof_item,
                                                   uint64_t downstream_lcm_nitems,
                                                   block_sptr link);
-#endif
     
-    std::unique_ptr<char[]> d_buffer;    
+    std::unique_ptr<char[]> d_buffer;
+    
+    std::unique_ptr<char*, std::function<void(char**)>> d_test;
     
     /*!
      * \brief constructor is private.  Use gr_make_buffer to create instances.

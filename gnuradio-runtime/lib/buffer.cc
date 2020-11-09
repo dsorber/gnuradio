@@ -13,6 +13,8 @@
 #endif
 #include "vmcircbuf.h"
 #include <gnuradio/buffer.h>
+#include <gnuradio/buffer_double_mapped.h>
+#include <gnuradio/buffer_single_mapped.h>
 #include <gnuradio/buffer_reader.h>
 #include <gnuradio/integer_math.h>
 #include <gnuradio/math.h>
@@ -90,10 +92,36 @@ buffer::buffer(int nitems, size_t sizeof_item, block_sptr link, BufferType d_buf
     s_buffer_count++;
 }
 
-//buffer_sptr make_buffer(int nitems, size_t sizeof_item, block_sptr link)
-//{
-//    return buffer_sptr(new buffer(nitems, sizeof_item, link));
-//}
+buffer_sptr make_buffer(int nitems, size_t sizeof_item,
+                        uint64_t downstream_lcm_nitems, block_sptr link)
+{
+#ifdef DOUBLE_MAPPED
+    // DBS - DEBUG
+    gr::logger_ptr logger;
+    gr::logger_ptr debug_logger;
+    gr::configure_default_loggers(logger, debug_logger, "buffer_double_mapped");
+    std::ostringstream msg;
+    msg << "buffer_double_mapped make_buffer() called  nitems: " << nitems 
+        << " -- sizeof_item: " << sizeof_item;
+    GR_LOG_DEBUG(logger, msg.str());
+    
+    return buffer_sptr(new buffer_double_mapped(nitems, sizeof_item, link));
+#endif
+    
+#ifdef SINGLE_MAPPED
+    // DBS - DEBUG
+    gr::logger_ptr logger;
+    gr::logger_ptr debug_logger;
+    gr::configure_default_loggers(logger, debug_logger, "buffer_single_mapped");
+    std::ostringstream msg;
+    msg << "make_buffer() called  nitems: " << nitems 
+        << " -- sizeof_item: " << sizeof_item;
+    GR_LOG_DEBUG(logger, msg.str());
+    
+    return buffer_sptr(new buffer_single_mapped(nitems, sizeof_item, 
+                                                downstream_lcm_nitems, link));
+#endif
+}
 
 buffer::~buffer()
 {
